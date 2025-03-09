@@ -39,6 +39,11 @@
  #define FILTER_SAMPLES					5
  #define RPM_FILTER_SAMPLES				8
  #define TC_DIFF_MAX_PASS				60  // TODO: move to app_conf
+
+ #define MAX_SPEED 21.5
+ 			#define MAX_ERPM  28200
+ 			#define MAX_MAX_ERPM 30000
+ 			#define SPEED(a) (a / MAX_SPEED * MAX_ERPM)
  
  #define CTRL_USES_BUTTON(ctrl_type)(\
 		 ctrl_type == ADC_CTRL_TYPE_CURRENT_REV_BUTTON || \
@@ -286,7 +291,7 @@
 		 // Optionally apply a filter
 		 static float filter_val_2 = 0.0;
 		 // UTILS_LP_MOVING_AVG_APPROX(filter_val_2, brake, FILTER_SAMPLES);
-		 UTILS_LP`_MOVING_AVG_APPROX(filter_val_2, turbo, FILTER_SAMPLES);
+		 UTILS_LP_MOVING_AVG_APPROX(filter_val_2, turbo, FILTER_SAMPLES);
  
 		 if (config.use_filter) {
 			 // brake = filter_val_2;
@@ -402,10 +407,13 @@
 		 if ( turbo >= 0.5 )
 		 {
 			 pwr = 1.0;
+			 mc_interface_set_smv_maxrpm(SPEED(22));
 		 }
 		 else if ( pwr >= 0.5 )
 		 {
 			 pwr = calc_efficient_power();
+			 pwr = 0.8;
+ 			 mc_interface_set_smv_maxrpm(SPEED(17));
 		 }
 		 else
 		 {

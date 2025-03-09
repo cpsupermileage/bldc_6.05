@@ -90,6 +90,7 @@ typedef struct {
 	float m_input_voltage_filtered_slower;
 	float m_temp_override;
 	float m_i_in_filter;
+	float smv_rpm_max;
 
 	// Backup data counters
 	uint64_t m_odometer_last;
@@ -653,6 +654,17 @@ void mc_interface_set_pid_pos(float pos) {
 
 	events_add("set_pid_pos", pos);
 }
+
+void mc_interface_set_smv_maxrpm(float rpm)
+ {
+ 	motor_now()->smv_rpm_max = rpm;
+ 	return;
+ }
+
+ float mc_interface_get_smv_maxrpm()
+ {
+ 	return motor_now()->smv_rpm_max;
+ }
 
 void mc_interface_set_current(float current) {
 	if (fabsf(current) > 0.001) {
@@ -2380,8 +2392,14 @@ static void update_override_limits(volatile motor_if_state_t *motor, volatile mc
 
 	// RPM max
 	float lo_max_rpm = 0.0;
-	const float rpm_pos_cut_start = conf->l_max_erpm * conf->l_erpm_start;
-	const float rpm_pos_cut_end = conf->l_max_erpm;
+	// OLD code cuts rpm with a calculated max, NEW code takes the min between SMV's speed and the calculated one, allowing us
+	// to override the max to what we set it depending on the smv_rpm_max variable
+	// const float rpm_pos_cut_start = conf->l_max_erpm * conf->l_erpm_start;
+	// const float rpm_pos_cut_end = conf->l_max_erpm;
+	float override_max = MIN(conf->l_max_erpm,motor_now()->smv_rpm_max);
+	const float rpm_pos_cut_start = override_max * conf->l_erpm_start;
+	const float rpm_pos_cut_end = override_max;
+
 	if (rpm_now < (rpm_pos_cut_start + 0.1)) {
 		lo_max_rpm = l_current_max_tmp;
 	} else if (rpm_now > (rpm_pos_cut_end - 0.1)) {
